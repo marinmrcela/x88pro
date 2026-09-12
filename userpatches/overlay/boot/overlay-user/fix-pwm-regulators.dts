@@ -1,0 +1,34 @@
+/dts-v1/;
+/plugin/;
+
+/*
+ * rk3528-x88pro: vdd-cpu / vdd-gpu / vdd-logic are pwm-regulators referencing
+ * PWM0/1/2, but the board DTB leaves those controllers disabled, so they fail
+ * with "pwm-regulator: Failed to get PWM". Consequences: no cpufreq at all (CPU
+ * pinned at 1.2 GHz instead of 2.016 GHz) and the Mali GPU never probes.
+ *
+ * TRADE-OFF: enabling these makes rockchip-pwm claim the shared PWM block IRQ
+ * (0x35 / Linux 30) non-shared. pwm@ffa90030 in the same block is the IR
+ * receiver (rockchip,remotectl-pwm) and requests that same IRQ at index 0, so it
+ * then fails with -EBUSY and the remote stops working.
+ *
+ * Enable this ONLY if you do not need the IR remote -- e.g. a headless box, or
+ * one driven over SSH / HDMI-CEC / USB keyboard.
+ */
+
+/ {
+	fragment@0 {
+		target-path = "/pwm@ffa90000";	/* vdd-gpu   */
+		__overlay__ { status = "okay"; };
+	};
+
+	fragment@1 {
+		target-path = "/pwm@ffa90010";	/* vdd-cpu   */
+		__overlay__ { status = "okay"; };
+	};
+
+	fragment@2 {
+		target-path = "/pwm@ffa90020";	/* vdd-logic */
+		__overlay__ { status = "okay"; };
+	};
+};
